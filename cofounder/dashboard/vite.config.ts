@@ -7,6 +7,8 @@ import cofounderVitePlugin from "./src/_cofounder/vite-plugin/index";
 export default defineConfig({
 	server: {
 		port: 5200,
+		host: true, // Listen on all network interfaces
+		strictPort: true, // Fail if port is already in use
 	},
 	plugins: [
 		// webcontainers stuff

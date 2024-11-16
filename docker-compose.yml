@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./cofounder/api
+      target: ${NODE_ENV:-development}
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./cofounder/api:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:4200"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    stop_grace_period: 30s
+
+  dashboard:
+    build:
+      context: ./cofounder/dashboard
+      target: ${NODE_ENV:-development}
+    ports:
+      - "5200:5200"
+    volumes:
+      - ./cofounder/dashboard:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      - HOST=0.0.0.0
+      - NODE_ENV=${NODE_ENV:-development}
+    depends_on:
+      api:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:5200"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    stop_grace_period: 30s
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=cofounder
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    stop_grace_period: 30s
+
+volumes:
+  postgres_data:
