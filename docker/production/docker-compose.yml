@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  cofounder:
+    build:
+      context: ../..
+      dockerfile: docker/production/Dockerfile
+    ports:
+      - "${PORT:-4200}:4200"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - COFOUNDER_API_KEY=${COFOUNDER_API_KEY}
+      - API_URL=${API_URL}
+      - PORT=${PORT:-4200}
+      - JWT_SECRET=${JWT_SECRET}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - OLLAMA_API_URL=http://ollama:11434
+    restart: unless-stopped
+    command: npm run start:prod
+    depends_on:
+      - cofounder-api
+      - ollama
+
+  cofounder-api:
+    build:
+      context: ../..
+      dockerfile: docker/production/Dockerfile.api
+    ports:
+      - "${API_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - COFOUNDER_API_KEY=${COFOUNDER_API_KEY}
+      - API_PORT=${API_PORT:-3000}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - JWT_SECRET=${JWT_SECRET}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - SSL_CERT_PATH=${SSL_CERT_PATH}
+      - SSL_KEY_PATH=${SSL_KEY_PATH}
+      - OLLAMA_API_URL=http://ollama:11434
+    restart: unless-stopped
+    command: npm run start:prod
+    volumes:
+      - api_data:/app/data
+      - ${SSL_CERT_PATH}:/ssl/cert:ro
+      - ${SSL_KEY_PATH}:/ssl/key:ro
+
+  ollama:
+    build:
+      context: .
+      dockerfile: Dockerfile.ollama
+    environment:
+      - OLLAMA_MODELS=qwen2.5:0.5b,all-minilm
+      - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+      - OLLAMA_ARCH=${OLLAMA_ARCH:-amd64}
+      - OLLAMA_ORIGINS=${CORS_ORIGIN}
+      - OLLAMA_HOST=0.0.0.0
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  api_data:
+  ollama_data:

@@ -1,0 +1,14 @@
+FROM ollama/ollama:latest
+
+# Set environment variables
+ENV OLLAMA_HOST=0.0.0.0
+ENV OLLAMA_ORIGINS=http://localhost:4200
+
+# Create models directory
+RUN mkdir -p /root/.ollama
+
+# Expose port
+EXPOSE 11434
+
+# Set default command
+CMD ["ollama", "serve"]

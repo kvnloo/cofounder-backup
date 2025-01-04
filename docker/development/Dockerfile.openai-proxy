@@ -1,0 +1,125 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm install express axios dotenv
+
+# Copy source code
+COPY . .
+
+# Create config file
+RUN echo 'module.exports = {' > config.js && \
+    echo '  openaiApiKey: process.env.OPENAI_API_KEY,' >> config.js && \
+    echo '  ollamaUrl: process.env.OLLAMA_API_URL,' >> config.js && \
+    echo '  port: process.env.PORT || 3001,' >> config.js && \
+    echo '  modelMappings: {' >> config.js && \
+    echo '    "gpt-3.5-turbo": "qwen2.5:0.5b",' >> config.js && \
+    echo '    "gpt-4": "qwen2.5:0.5b",' >> config.js && \
+    echo '    "text-embedding-ada-002": "all-minilm"' >> config.js && \
+    echo '  }' >> config.js && \
+    echo '};' >> config.js
+
+# Create server file
+RUN echo 'const express = require("express");' > server.js && \
+    echo 'const axios = require("axios");' >> server.js && \
+    echo 'const config = require("./config");' >> server.js && \
+    echo 'const app = express();' >> server.js && \
+    echo 'app.use(express.json());' >> server.js && \
+    echo '' >> server.js && \
+    echo 'const OPENAI_API = "https://api.openai.com/v1";' >> server.js && \
+    echo 'const OLLAMA_API = process.env.OLLAMA_API_URL || "http://ollama:11434/v1";' >> server.js && \
+    echo '' >> server.js && \
+    echo 'let isOpenAIAvailable = false;' >> server.js && \
+    echo 'let lastOpenAICheck = 0;' >> server.js && \
+    echo 'const CHECK_INTERVAL = 60000; // Check every minute' >> server.js && \
+    echo '' >> server.js && \
+    echo 'async function checkOpenAIAvailability() {' >> server.js && \
+    echo '  if (!config.openaiApiKey) return false;' >> server.js && \
+    echo '  try {' >> server.js && \
+    echo '    const response = await axios({' >> server.js && \
+    echo '      method: "GET",' >> server.js && \
+    echo '      url: `${OPENAI_API}/models`,' >> server.js && \
+    echo '      headers: { Authorization: `Bearer ${config.openaiApiKey}` },' >> server.js && \
+    echo '      timeout: 5000' >> server.js && \
+    echo '    });' >> server.js && \
+    echo '    return response.status === 200;' >> server.js && \
+    echo '  } catch (error) {' >> server.js && \
+    echo '    console.warn("OpenAI API check failed:", error.message);' >> server.js && \
+    echo '    return false;' >> server.js && \
+    echo '  }' >> server.js && \
+    echo '}' >> server.js && \
+    echo '' >> server.js && \
+    echo 'async function updateOpenAIStatus() {' >> server.js && \
+    echo '  const now = Date.now();' >> server.js && \
+    echo '  if (now - lastOpenAICheck > CHECK_INTERVAL) {' >> server.js && \
+    echo '    isOpenAIAvailable = await checkOpenAIAvailability();' >> server.js && \
+    echo '    lastOpenAICheck = now;' >> server.js && \
+    echo '    console.log(`OpenAI API status: ${isOpenAIAvailable ? "available" : "unavailable"}`);' >> server.js && \
+    echo '  }' >> server.js && \
+    echo '  return isOpenAIAvailable;' >> server.js && \
+    echo '}' >> server.js && \
+    echo '' >> server.js && \
+    echo 'async function tryOpenAI(req, res, next) {' >> server.js && \
+    echo '  const available = await updateOpenAIStatus();' >> server.js && \
+    echo '  if (!available) return next();' >> server.js && \
+    echo '' >> server.js && \
+    echo '  try {' >> server.js && \
+    echo '    const response = await axios({' >> server.js && \
+    echo '      method: req.method,' >> server.js && \
+    echo '      url: `${OPENAI_API}${req.path}`,' >> server.js && \
+    echo '      headers: { Authorization: `Bearer ${config.openaiApiKey}` },' >> server.js && \
+    echo '      data: req.body,' >> server.js && \
+    echo '      timeout: 30000' >> server.js && \
+    echo '    });' >> server.js && \
+    echo '    return res.json(response.data);' >> server.js && \
+    echo '  } catch (error) {' >> server.js && \
+    echo '    if (error.response?.status === 429 || error.code === "ECONNABORTED") {' >> server.js && \
+    echo '      console.warn("OpenAI request failed, falling back to Ollama:", error.message);' >> server.js && \
+    echo '      isOpenAIAvailable = false; // Mark as unavailable on rate limits or timeouts' >> server.js && \
+    echo '      return next();' >> server.js && \
+    echo '    }' >> server.js && \
+    echo '    res.status(error.response?.status || 500).json({ error: error.message });' >> server.js && \
+    echo '  }' >> server.js && \
+    echo '}' >> server.js && \
+    echo '' >> server.js && \
+    echo 'async function useOllama(req, res) {' >> server.js && \
+    echo '  try {' >> server.js && \
+    echo '    const model = config.modelMappings[req.body.model] || req.body.model;' >> server.js && \
+    echo '    const ollamaBody = { ...req.body, model };' >> server.js && \
+    echo '    console.log(`Routing request to Ollama with model: ${model}`);' >> server.js && \
+    echo '    const response = await axios({' >> server.js && \
+    echo '      method: req.method,' >> server.js && \
+    echo '      url: `${OLLAMA_API}${req.path}`,' >> server.js && \
+    echo '      data: ollamaBody,' >> server.js && \
+    echo '      timeout: 60000' >> server.js && \
+    echo '    });' >> server.js && \
+    echo '    return res.json(response.data);' >> server.js && \
+    echo '  } catch (error) {' >> server.js && \
+    echo '    console.error("Ollama request failed:", error.message);' >> server.js && \
+    echo '    res.status(error.response?.status || 500).json({ error: error.message });' >> server.js && \
+    echo '  }' >> server.js && \
+    echo '}' >> server.js && \
+    echo '' >> server.js && \
+    echo '// Initial availability check' >> server.js && \
+    echo 'updateOpenAIStatus();' >> server.js && \
+    echo '' >> server.js && \
+    echo 'app.use("/v1/*", tryOpenAI, useOllama);' >> server.js && \
+    echo '' >> server.js && \
+    echo 'app.get("/health", async (req, res) => {' >> server.js && \
+    echo '  const openaiStatus = await updateOpenAIStatus();' >> server.js && \
+    echo '  res.json({' >> server.js && \
+    echo '    status: "healthy",' >> server.js && \
+    echo '    openai: openaiStatus ? "available" : "unavailable",' >> server.js && \
+    echo '    fallback: "ollama"' >> server.js && \
+    echo '  });' >> server.js && \
+    echo '});' >> server.js && \
+    echo '' >> server.js && \
+    echo 'const port = config.port;' >> server.js && \
+    echo 'app.listen(port, () => {' >> server.js && \
+    echo '  console.log(`OpenAI proxy server running on port ${port}`);' >> server.js && \
+    echo '});' >> server.js
+
+EXPOSE 3001
+CMD ["node", "server.js"]
