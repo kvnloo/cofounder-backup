@@ -1,0 +1,48 @@
+{
+  "name": "cofounder-ide",
+  "version": "1.0.0",
+  "main": "electron-main.js",
+  "scripts": {
+    "electron:dev": "electron .",
+    "start": "cd api && npm start",
+    "build": "cd cofounder/dashboard && npm run build && node ../../scripts/sync-dist.js",
+    "electron:build": "npm run build && electron-builder",
+    "pages:build": "npm run build && node scripts/generate-pages.js"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "^2.11.2",
+    "adm-zip": "^0.5.10",
+    "react-redux": "^9.2.0",
+    "redux": "^5.0.1",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "electron": "^25.0.0",
+    "electron-builder": "^24.6.3"
+  },
+  "build": {
+    "appId": "ai.cofounder.desktop",
+    "productName": "Cofounder IDE",
+    "files": [
+      "dist/**/*",
+      "electron-main.js",
+      "preload.js",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis",
+      "signingHashAlgorithms": [],
+      "sign": false,
+      "signAndEditExecutable": false
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}

@@ -17,9 +17,9 @@ function createWindow() {
   })
 
   mainWindow.loadURL(
-    isDev 
-      ? 'http://localhost:4200' 
-      : `file://${path.join(__dirname, 'dist/cofounder/index.html')}`
+    isDev
+      ? 'http://localhost:5200'
+      : `file://${path.join(__dirname, 'dist/index.html')}`
   )
 
   if (isDev) {

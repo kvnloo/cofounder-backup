@@ -1,0 +1,48 @@
+const fs = require("fs");
+const path = require("path");
+
+const repo = "WayaSteurbautYT/cofounder";
+const baseUrl = `https://github.com/${repo}/releases/latest/download`;
+
+const html = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cofounder IDE Download</title>
+    <style>
+      body { font-family: Inter, system-ui, -apple-system, sans-serif; margin: 0; background: #0b1f24; color: #f8fafc; }
+      .container { max-width: 860px; margin: 0 auto; padding: 80px 24px; }
+      .card { background: #112f35; border-radius: 16px; padding: 32px; box-shadow: 0 18px 40px rgba(0,0,0,0.35); }
+      h1 { margin-top: 0; font-size: 32px; }
+      p { line-height: 1.6; color: #cbd5f5; }
+      .links { display: grid; gap: 12px; margin-top: 24px; }
+      a.button { display: inline-flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-radius: 10px; background: #1d4ed8; color: white; text-decoration: none; font-weight: 600; }
+      a.button.secondary { background: #0f172a; border: 1px solid #1e293b; }
+      footer { margin-top: 32px; font-size: 14px; color: #94a3b8; }
+      code { background: #0f172a; padding: 2px 6px; border-radius: 6px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1>Cofounder IDE — Desktop Download</h1>
+        <p>Grab the latest release build for your platform. These links point to the most recent GitHub Release artifacts.</p>
+        <div class="links">
+          <a class="button" href="${baseUrl}/Cofounder%20IDE%20Setup.exe">Windows Installer (.exe)</a>
+          <a class="button" href="${baseUrl}/Cofounder%20IDE.dmg">macOS Installer (.dmg)</a>
+          <a class="button" href="${baseUrl}/Cofounder%20IDE.AppImage">Linux AppImage</a>
+          <a class="button secondary" href="https://github.com/${repo}/releases">All Releases</a>
+        </div>
+        <footer>
+          Built with Electron • Versioned releases are published from <code>${repo}</code>
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>`;
+
+const docsDir = path.join(__dirname, "..", "docs");
+fs.mkdirSync(docsDir, { recursive: true });
+fs.writeFileSync(path.join(docsDir, "index.html"), html, "utf8");
+console.log("GitHub Pages site generated in docs/index.html");
