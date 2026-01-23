@@ -1,0 +1,35 @@
+:root {
+  /* Aquamarine primary colors */
+  --primary: 159.6 70.1% 45.9%;
+  --primary-foreground: 210 40% 98%;
+
+  /* Gold accent colors */
+  --accent: 45.9 100% 50%;
+  --accent-foreground: 210 40% 98%;
+  
+  /* Updated background and foreground */
+  --background: 187.2 58.8% 19.6%;
+  --foreground: 0 0% 98%;
+  
+  --muted: 186.9 56.7% 25.1%;
+  --muted-foreground: 0 0% 70%;
+
+  --popover: 187 50% 25%;
+  --popover-foreground: 0 0% 98%;
+
+  --card: 188 55% 20%;
+  --card-foreground: 0 0% 98%;
+
+  --border: 187 60% 30%;
+  --input: 187 60% 30%;
+
+  --secondary: 188 55% 35%;
+  --secondary-foreground: 0 0% 98%;
+
+  --destructive: 0 100% 50%;
+  --destructive-foreground: 210 40% 98%;
+
+  --ring: 187.2 58.8% 45.1%;
+
+  --radius: 0.5rem;
+}
